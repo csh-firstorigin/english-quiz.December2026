@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>英語クイズ</title>
+<style>
+:root{--bg:#fafaf7;--card:#fff;--tx:#1d1d1b;--mu:#6b6b66;--ac:#d9480f;--ok:#2b8a3e;--ng:#c92a2a;--bd:#e4e2dc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--card:#232321;--tx:#f1f0ea;--mu:#a3a29b;--ac:#ff922b;--ok:#69db7c;--ng:#ff8787;--bd:#3a3a36;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171716;--card:#232321;--tx:#f1f0ea;--mu:#a3a29b;--ac:#ff922b;--ok:#69db7c;--ng:#ff8787;--bd:#3a3a36;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.5}
+main{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.25rem;margin:0 0 4px}
+.sub{color:var(--mu);font-size:.85rem;margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:14px}
+label{display:block;font-size:.85rem;color:var(--mu);margin:10px 0 6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{flex:1;min-width:90px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:.9rem;cursor:pointer}
+.chip.on{border-color:var(--ac);background:var(--ac);color:#fff}
+button.main{width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:var(--ac);color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+.q{font-size:2.2rem;font-weight:800;text-align:center;margin:6px 0 0}
+.jp{text-align:center;color:var(--mu);margin:0 0 14px}
+input[type=text]{width:100%;box-sizing:border-box;padding:14px;font-size:1.3rem;border:2px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx);text-align:center}
+input[type=text]:focus{outline:none;border-color:var(--ac)}
+.fb{min-height:1.6em;text-align:center;font-weight:700;margin-top:12px}
+.ok{color:var(--ok)}.ng{color:var(--ng)}
+.bar{height:6px;background:var(--bd);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.bar i{display:block;height:100%;background:var(--ac);width:0;transition:width .2s}
+.top{display:flex;justify-content:space-between;font-size:.85rem;color:var(--mu);margin-bottom:6px}
+.big{font-size:2.4rem;font-weight:800;text-align:center}
+ul{padding-left:0;list-style:none;margin:8px 0 0}
+li{padding:8px 0;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;gap:8px}
+.fc{border:2px dashed var(--bd);border-radius:14px;padding:22px 10px;margin:12px 0;text-align:center;cursor:pointer;min-height:150px;user-select:none}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>英語クイズ</h1>
+<p class="sub" id="sub">鬼の動詞変形トレーニング ／ 原形 → 過去形</p>
+<div class="row" id="modes" style="margin-bottom:10px"><button class="chip on" data-v="v">動詞の過去形</button><button class="chip" data-v="w">基本英単語</button><button class="chip" data-v="m">合併（両方）</button></div>
+<div class="row" id="tabs" style="margin-bottom:14px"><button class="chip on" data-v="q">クイズ</button><button class="chip" data-v="c">単語帳</button><button class="chip" data-v="r">記録</button></div>
+
+<section id="setup" class="card">
+<label>範囲</label>
+<div class="row" id="rng">
+<button class="chip on" data-v="all">全部</button>
+<button class="chip" data-v="a">前半 (arrive〜laugh)</button>
+<button class="chip" data-v="b">後半 (stand〜spend)</button>
+</div>
+<label>問題数</label>
+<div class="row" id="cnt">
+<button class="chip" data-v="5">5問</button>
+<button class="chip" data-v="10">10問</button>
+<button class="chip" data-v="15">15問</button>
+<button class="chip on" data-v="20">20問</button>
+<button class="chip" data-v="30">30問</button>
+<button class="chip" data-v="50">50問</button>
+<button class="chip" data-v="0">全問</button>
+</div>
+<label>ヒント</label>
+<div class="row" id="hint">
+<button class="chip on" data-v="1">ヒントあり（意味・頭文字）</button>
+<button class="chip" data-v="0">なし（本番風）</button>
+</div>
+<p class="jp" id="deckinfo" style="margin:14px 0 0"></p>
+<p class="sub" style="text-align:center;margin:2px 0 0">全単語を出し切るまで、同じ単語は2回出ません（回をまたいで保存）</p>
+<button class="main" id="start">スタート</button>
+<button class="chip" id="dreset" style="margin-top:10px;width:100%">出題順をリセット（1周目に戻す）</button>
+</section>
+
+<section id="play" class="card hide">
+<div class="top"><span id="no"></span><span id="sc"></span></div>
+<div class="bar"><i id="pg"></i></div>
+<div class="q" id="verb"></div>
+<p class="jp" id="mean"></p>
+<input type="text" id="ans" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="過去形を入力">
+<div class="fb" id="fb"></div>
+<button class="main" id="go">答え合わせ</button>
+</section>
+
+<section id="result" class="card hide">
+<div class="big" id="final"></div>
+<p class="jp" id="msg"></p>
+<div id="wrongBox"><strong>まちがえた動詞</strong><ul id="wrong"></ul></div>
+<button class="main" id="again">もう一度</button>
+<button class="main" id="retry" style="background:var(--tx);color:var(--bg)">まちがえた問題だけ再挑戦</button>
+</section>
+
+<section id="hist" class="card hide">
+<p class="sub" id="hmode">統計：動詞の過去形</p>
+<button class="main hide" id="hai" style="margin-top:0">🤖 AIにまちがいの傾向を分析してもらう</button>
+<div id="aiout" class="card hide" style="white-space:pre-wrap;margin:12px 0 0;font-size:.92rem"></div>
+<button class="main" id="hweak" style="margin:12px 0 18px">苦手な単語でクイズ（もう一度）</button>
+<div id="hsum"></div>
+<strong>最近の記録</strong><ul id="hlist"></ul>
+<div style="margin-top:16px"><strong>よくまちがえる単語 TOP30</strong></div><ul id="hmiss"></ul>
+<button class="chip" id="hreset" style="margin-top:12px;width:100%">記録を消す</button>
+</section>
+
+<section id="cards" class="card hide">
+<div class="row" id="fr"><button class="chip on" data-v="all">全部</button><button class="chip" data-v="a">前半</button><button class="chip" data-v="b">後半</button></div>
+<div class="row" id="ff" style="margin-top:8px"><button class="chip on" data-v="all">全部表示</button><button class="chip" data-v="todo">まだの単語だけ</button></div>
+<div class="top" style="margin-top:14px"><span id="fn"></span><span id="fm"></span></div>
+<div class="fc" id="fcard"><div class="q" id="fq"></div><p class="jp" id="fj"></p><div class="big ok hide" id="fp"></div><p class="jp" id="fh"></p></div>
+<div class="row"><button class="chip" id="fno">まだ</button><button class="chip on" id="fyes">覚えた ✓</button></div>
+<div class="row" style="margin-top:8px"><button class="chip" id="fprev">← 前</button><button class="chip" id="fshuf">シャッフル</button><button class="chip" id="fnext">次 →</button></div>
+<button class="chip" id="freset" style="margin-top:12px;width:100%">記憶をリセット</button>
+</section>
+
+<script>
+const RAW=`arrive|到着する|arrived
+be|〜である、いる|was / were
+become|〜になる|became
+begin|始める|began
+break|壊す|broke
+bring|持ってくる|brought
+build|建てる|built
+buy|買う|bought
+catch|捕まえる|caught
+carry|運ぶ|carried
+clean|掃除する|cleaned
+cry|泣く|cried
+come|来る|came
+copy|写す|copied
+cut|切る|cut
+do|する|did
+drop|落とす|dropped
+draw|描く|drew
+drink|飲む|drank
+leave|去る、出発する|left
+lie|横たわる|lay
+like|好きである|liked
+lose|失う|lost
+make|作る|made
+mean|意味する|meant
+meet|会う|met
+put|置く|put
+plan|計画する|planned
+play|遊ぶ、(スポーツ・楽器を)する|played
+read|読む|read
+ride|乗る|rode
+run|走る|ran
+study|勉強する|studied
+say|言う|said
+see|見る|saw
+sell|売る|sold
+set|置く、設定する|set
+send|送る|sent
+sing|歌う|sang
+drive|運転する|drove
+eat|食べる|ate
+fall|落ちる|fell
+feel|感じる|felt
+find|見つける|found
+fly|飛ぶ|flew
+forget|忘れる|forgot
+get|手に入れる|got
+give|与える|gave
+go|行く|went
+grow|成長する、育てる|grew
+have|持つ、〜がある|had
+hear|聞く|heard
+help|助ける|helped
+hit|打つ|hit
+hold|持つ|held
+keep|保つ|kept
+know|知っている|knew
+laugh|笑う|laughed
+stand|立つ|stood
+swim|泳ぐ|swam
+take|取る、連れて行く|took
+teach|教える|taught
+tell|話す、伝える|told
+try|試みる|tried
+think|考える|thought
+understand|理解する|understood
+use|使う|used
+visit|訪問する|visited
+watch|見る、観る|watched
+wear|着る、身につける|wore
+win|勝つ|won
+write|書く|wrote
+sit|座る|sat
+stop|止める|stopped
+speak|話す|spoke
+spend|費やす、過ごす|spent`;
+const V=RAW.split("\n").map(l=>{const [v,m,p]=l.split("|");return{v,m,p,k:"v"}});
+const WRAW=`take ~ for a walk|~を散歩に連れていく
+note|メモ、覚え書き
+medicine|薬
+Speaking.|《電話で》はい、私です。
+join|~に参加する
+right now|ちょうど今
+I'd love to.|ぜひとも。
+court|(テニスなどの)コート
+soon|すぐに、まもなく
+See you later.|またあとでね。
+hold|~をつかんでいる、電話を切らないでおく
+hold on|電話を切らないで待つ
+out|外に、外出して
+message|伝言、メッセージ
+sleep|眠る
+living room|居間
+cake|ケーキ
+lie|横になる
+sofa|ソファー
+laugh|笑う
+give|~を与える
+cut|~を切る
+die|死ぬ
+break|(短い)休憩
+be on a break|休憩中である
+take a break|休憩する
+wait|待つ
+wait for|~を待つ
+buy|~を買う
+cold|寒い、冷たい
+snack|軽食、スナック、間食
+store|店
+then|それでは
+online|オンラインで
+tablet|タブレット(PC)
+homework|宿題
+do one's homework|宿題をする
+smell|~のにおいがする
+outside|外で(に)
+look for|~を探す
+loudly|大声で、騒々しく
+weather|天気、天候
+yeah|うん(= yes)
+barley tea|麦茶
+rule|規則、ルール
+belong|所属する
+belong to|~に属する
+idea|思いつき、アイディア
+wrong|間違った、誤った
+number|番号、電話番号
+report|レポート、報告書
+clown|道化、ピエロ
+circus|サーカス
+volunteer|ボランティア
+difference|違い、相違点
+fun|楽しみ、楽しいこと
+sick|病気の
+be in the hospital|入院している
+away|離れて
+lonely|さびしい
+worry about|~を心配する
+around|~の周りを、~のあちこちを
+world|世界
+laughter|笑い
+bedroom|寝室
+bathroom|浴室
+dining room|食堂、ダイニングルーム
+brush|~をブラシで磨く、~にブラシをかける
+teeth|toothの複数形
+tooth|歯
+water|~に水をやる
+plant|植物
+---
+front|前、正面
+in front of|~の正面に
+class|授業、クラス
+arrive|到着する、着く
+early|早く
+Mrs.|《既婚女性の姓の前で》~さん、先生
+south|南、南部、南方
+culture|文化
+country|国
+ask|~にたずねる
+answer|答える
+last|この前の、先~
+ago|~前に《時間を表す語のあとにつけて》
+exam|試験
+yesterday|昨日
+drop|落ちる、~を落とす
+way|道筋、道
+on one's way|途中で
+carry|~を運ぶ
+stop|止まる、~を止める
+plan|~を計画する
+the day before yesterday|おととい
+month|1ヵ月、月
+anime|アニメ
+sound|~に聞こえる
+Sounds nice.|それはいいね
+move|~を動かす、移動させる
+PC|《personal computerの略》パソコン
+setting|設定
+didn't|did notの短縮形
+smartphone|スマートフォン
+back|戻って、帰って
+call back ~|~に電話をかけ直す
+travel|旅行する
+however|しかしながら、けれども
+say|~と言う
+take out ~|~を取り出す
+finally|最後に
+leave|~を出発する、去る
+hotel|ホテル、旅館
+airport|空港
+actor|俳優
+plane|飛行機
+begin|始まる、~を始める
+forget|~を忘れる
+hear|~が聞こえる
+lose|~を失う、なくす
+sell|~を売る
+tell|~に告げる、伝える
+comic|《comic bookで》漫画(マンガ)
+coffee|コーヒー
+journey|旅(長い旅行)
+half|半分
+hour|1時間
+own|自分の、自分自身の
+public|公共の
+tour|旅行、観光(ツアー)
+bear|クマ
+brown bear|ヒグマ
+wolf|オオカミ
+wolves|wolfの複数形
+wild|野生の
+safely|安全に
+aurora|オーロラ
+during|~の間中(ずっと)
+trip|旅行(短めの旅行)
+greeting|《greetingsで》あいさつの便り
+letter|手紙
+camp|キャンプをする
+close|接近して、ごく近くに
+pay|~を払う、~を支払う
+attention|注意、注目
+pay attention|~に注意を払う
+appear|現れる
+a little|少し、少しは《量を示す》
+grandma|おばあちゃん
+attend|~に出席する、参列する
+concert|コンサート、演奏会
+tomorrow|明日(は)
+game|ゲーム、試合`;
+let lv=7;const W=[];WRAW.split("\n").forEach(l=>{if(l==="---"){lv=8;return}const [e,j]=l.split("|");W.push({v:"w:"+e,d:e,m:j,p:e,k:"w",l:lv,ph:/\s/.test(e)||e==="Speaking."})});
+const ALL=V,BYID={};V.concat(W).forEach(x=>BYID[x.v]=x);
+const D=q=>q.d||q.v,HT=q=>q.k==="w"?"タップして意味を見る":"タップして過去形を見る";
+let mode="v";
+const dk=()=>(mode==="v"?"":mode+":")+opt.rng;
+const HK=()=>mode==="v"?"verbhist":"verbhist_"+mode;
+const $=id=>document.getElementById(id);
+const opt={rng:"all",cnt:"20",hint:"1"};
+[["rng"],["cnt"],["hint"]].forEach(([k])=>{$(k).addEventListener("click",e=>{
+ const b=e.target.closest(".chip");if(!b)return;
+ [...$(k).children].forEach(c=>c.classList.remove("on"));b.classList.add("on");opt[k]=b.dataset.v;});});
+let Q=[],i=0,score=0,wrong=[],answered=false;
+const norm=s=>s.trim().toLowerCase().replace(/[~〜.!?,'’]/g,"").replace(/\s+/g," ").trim();
+function ok(q,a){a=norm(a);const forms=q.p.split("/").map(norm);return a===norm(q.p)||forms.includes(a);}
+function shuffle(a){a=a.slice();for(let j=a.length-1;j>0;j--){const k=Math.floor(Math.random()*(j+1));[a[j],a[k]]=[a[k],a[j]]}return a}
+function begin(list,rt){isRetry=!!rt;wa={};
+ Q=shuffle(list);i=0;score=0;wrong=[];
+ $("setup").classList.add("hide");$("result").classList.add("hide");$("play").classList.remove("hide");show();
+}
+function poolOf(r){
+ if(mode==="w")return r==="all"?W:r==="one"?W.filter(x=>!x.ph):r==="ph"?W.filter(x=>x.ph):W.filter(x=>x.l===(r==="l7"?7:8));
+ if(mode==="m")return V.concat(W);
+ const s=V.findIndex(x=>x.v==="stand");return r==="a"?V.slice(0,s):r==="b"?V.slice(s):V}
+let decks={};try{decks=JSON.parse(localStorage.getItem("verbdeck")||"{}")}catch(e){}
+function saveDecks(){try{localStorage.setItem("verbdeck",JSON.stringify(decks))}catch(e){}}
+function draw(pool,n){
+ const key=dk(),names=pool.map(x=>x.v),st=decks[key];
+ let left,cycle;
+ if(!n){decks[key]={left:shuffle(names),cycle:(st?st.cycle:0)+1};saveDecks();return shuffle(pool);}
+ if(!st){left=shuffle(names);cycle=1}else{left=st.left.filter(v=>names.includes(v));cycle=st.cycle}
+ const out=[];
+ while(out.length<n){
+  if(!left.length){left=shuffle(names.filter(v=>!out.includes(v)));cycle++;if(!left.length)break;}
+  out.push(left.shift());
+ }
+ decks[key]={left,cycle};saveDecks();
+ return out.map(v=>BYID[v]);
+}
+function deckInfo(){
+ const st=decks[dk()],tot=poolOf(opt.rng).length;
+ $("deckinfo").textContent=!st?`未出題：${tot}語すべて`:st.left.length?`${st.cycle}周目：残り ${st.left.length} / ${tot} 語`:`${st.cycle}周完了！次は${st.cycle+1}周目`;
+}
+$("rng").addEventListener("click",deckInfo);
+$("dreset").onclick=()=>{delete decks[dk()];saveDecks();deckInfo();};
+deckInfo();
+$("start").onclick=()=>{
+ let pool=poolOf(opt.rng);
+ begin(draw(pool,+opt.cnt));deckInfo();
+};
+function show(){
+ answered=false;const q=Q[i];
+ $("no").textContent=`${i+1} / ${Q.length}`;$("sc").textContent=`正解 ${score}`;
+ $("pg").style.width=(i/Q.length*100)+"%";
+ $("verb").style.fontSize=q.k==="w"?"1.6rem":"";
+ if(q.k==="w"){$("verb").textContent=q.m;$("mean").textContent=opt.hint==="1"?`英語で書こう（頭文字 ${q.p[0]}）`:"英語で書こう";$("ans").placeholder="英語を入力"}
+ else{$("verb").textContent=q.v;$("mean").textContent=opt.hint==="1"?q.m:"　";$("ans").placeholder="過去形を入力"}
+ $("ans").value="";$("ans").disabled=false;$("fb").textContent="";$("fb").className="fb";
+ $("go").textContent="答え合わせ";$("ans").focus();
+}
+function check(){
+ if(answered){i++;if(i>=Q.length)return finish();return show();}
+ const q=Q[i],a=$("ans").value;if(!a.trim())return;
+ answered=true;$("ans").disabled=true;
+ if(ok(q,a)){score++;$("fb").textContent="⭕ 正解！ "+q.p;$("fb").className="fb ok";}
+ else{wrong.push(q);wa[q.v]=a.trim();$("fb").textContent="❌ 正解は "+q.p;$("fb").className="fb ng";}
+ $("sc").textContent=`正解 ${score}`;
+ $("go").textContent=i+1>=Q.length?"結果を見る":"次へ";
+}
+$("go").onclick=check;
+document.addEventListener("keydown",e=>{
+ if(e.key!=="Enter"||e.isComposing||e.repeat)return;
+ if($("play").classList.contains("hide"))return;
+ if(e.target.tagName==="BUTTON")return;
+ e.preventDefault();check();
+});
+function finish(){
+ $("play").classList.add("hide");$("result").classList.remove("hide");
+ const r=Math.round(score/Q.length*100);
+ saveHist({t:Date.now(),s:score,n:Q.length,w:wrong.map(q=>q.v),r:opt.rng,rt:isRetry,q:Q.map(x=>x.v),x:wa});
+ $("final").textContent=`${score} / ${Q.length}（${r}点）`;
+ $("msg").textContent=r===100?"全問正解！すごい！":r>=80?"もう少しで完璧！":"まちがえたところをもう一度やろう";
+ $("wrong").innerHTML=wrong.map(q=>`<li><span>${q.k==="w"?q.m:q.v+"（"+q.m+"）"}</span><b>${q.p}</b></li>`).join("");
+ $("wrongBox").classList.toggle("hide",!wrong.length);$("retry").classList.toggle("hide",!wrong.length);
+}
+$("again").onclick=()=>{$("result").classList.add("hide");$("setup").classList.remove("hide");deckInfo()};
+$("retry").onclick=()=>begin(wrong,true);
+
+/* 単語帳 */
+let mem={};try{mem=JSON.parse(localStorage.getItem("verbmemo")||"{}")}catch(e){}
+const saveMem=()=>{try{localStorage.setItem("verbmemo",JSON.stringify(mem))}catch(e){}};
+let fcList=[],fi=0,fcRng="all",fcFil="all";
+$("tabs").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;
+ [...$("tabs").children].forEach(c=>c.classList.remove("on"));b.classList.add("on");
+ ["setup","play","result","cards","hist"].forEach(id=>$(id).classList.add("hide"));
+ const v=b.dataset.v;if(v==="c"){$("cards").classList.remove("hide");fbuild();}else if(v==="r"){$("hist").classList.remove("hide");renderHist();}else{$("setup").classList.remove("hide");deckInfo();}});
+[["fr"],["ff"]].forEach(([k])=>$(k).addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;
+ [...$(k).children].forEach(c=>c.classList.remove("on"));b.classList.add("on");
+ if(k==="fr")fcRng=b.dataset.v;else fcFil=b.dataset.v;fbuild();}));
+function fbuild(){
+ let l=poolOf(fcRng);
+ if(fcFil==="todo")l=l.filter(x=>!mem[x.v]);fcList=l;fi=0;fshow();}
+function fshow(){const A=poolOf("all"),n=A.filter(x=>mem[x.v]).length;$("fm").textContent=`覚えた ${n} / ${A.length}`;
+ $("fp").classList.add("hide");
+ if(!fcList.length){$("fn").textContent="0 / 0";$("fq").textContent="🎉 全部覚えた！";$("fj").textContent="";$("fh").textContent="";return}
+ const q=fcList[fi];$("fn").textContent=`${fi+1} / ${fcList.length}${mem[q.v]?" ✓":""}`;
+ const w=q.k==="w";$("fq").textContent=D(q);$("fj").textContent=w?"":q.m;$("fp").textContent=w?q.m:q.p;$("fp").style.fontSize=w?"1.4rem":"";$("fh").textContent=HT(q);}
+$("fcard").onclick=()=>{if(!fcList.length)return;const h=$("fp").classList.toggle("hide");$("fh").textContent=h?HT(fcList[fi]):"";};
+function fmove(d){if(!fcList.length)return;fi=(fi+d+fcList.length)%fcList.length;fshow();}
+$("fyes").onclick=()=>{if(!fcList.length)return;const q=fcList[fi];mem[q.v]=1;saveMem();
+ if(fcFil==="todo"){fcList.splice(fi,1);if(fi>=fcList.length)fi=0;fshow();}else fmove(1);};
+$("fno").onclick=()=>{if(!fcList.length)return;delete mem[fcList[fi].v];saveMem();fmove(1);};
+$("fprev").onclick=()=>fmove(-1);$("fnext").onclick=()=>fmove(1);
+$("fshuf").onclick=()=>{fcList=shuffle(fcList);fi=0;fshow();};
+$("freset").onclick=()=>{mem={};saveMem();fbuild();};
+
+/* 記録 */
+let hist=[],isRetry=false,wa={};function loadHist(){hist=[];try{hist=JSON.parse(localStorage.getItem(HK())||"[]")}catch(e){}}loadHist();
+function saveHist(rec){hist.unshift(rec);hist=hist.slice(0,100);try{localStorage.setItem(HK(),JSON.stringify(hist))}catch(e){}}
+function missed(){const c={};hist.forEach(h=>h.w.forEach(v=>c[v]=(c[v]||0)+1));return Object.entries(c).sort((a,b)=>b[1]-a[1]);}
+function renderHist(){
+ const tot=hist.length;
+ if(!tot){$("hsum").innerHTML="<p class='jp'>まだ記録がありません。クイズを解くと自動で保存されます。</p>";$("hlist").innerHTML="";$("hmiss").innerHTML="";return}
+ const pct=h=>Math.round(h.s/h.n*100);
+ const best=Math.max(...hist.map(pct)),avg=Math.round(hist.reduce((a,h)=>a+pct(h),0)/tot);
+ $("hsum").innerHTML=`<div class="top"><span>挑戦 ${tot}回</span><span>最高 ${best}点 ／ 平均 ${avg}点</span></div>`;
+ const rl={all:"全部",a:"前半",b:"後半",l7:"L7",l8:"L8",one:"1単語",ph:"熟語・英文"},p2=n=>String(n).padStart(2,"0");
+ $("hlist").innerHTML=hist.slice(0,20).map(h=>{const d=new Date(h.t);return `<li><span>${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())} ${h.rt?"復習":rl[h.r]}</span><b>${h.s}/${h.n}（${pct(h)}点）</b></li>`}).join("");
+ const top=missed().slice(0,30);
+ $("hmiss").innerHTML=top.length?top.map(([v,n])=>{const q=BYID[v];if(!q)return"";return `<li><span>${q.k==="w"?q.m:v+"（"+q.m+"）"}</span><b>${q.p} ／ ${n}回</b></li>`}).join(""):"<li>まちがいなし！</li>";
+}
+$("hreset").onclick=()=>{hist=[];try{localStorage.removeItem(HK())}catch(e){}$("aiout").classList.add("hide");renderHist();};
+
+/* AI分析 */
+let sampleFn=null;
+(async()=>{try{if(window.claude&&window.claude.use)sampleFn=await window.claude.use("sample")}catch(e){}if(sampleFn)$("hai").classList.remove("hide");})();
+$("hai").onclick=async()=>{
+ if(!sampleFn)return;const box=$("aiout");box.classList.remove("hide");
+ if(!hist.length){box.textContent="まだ記録がありません。クイズを解いてから分析してね。";return}
+ const st={};poolOf("all").forEach(x=>st[x.v]={a:0,w:0,t:[]});
+ hist.forEach(h=>{(h.q||[]).forEach(v=>{if(st[v])st[v].a++});h.w.forEach(v=>{const s=st[v];if(!s)return;s.w++;if(!h.q)s.a++;const t=h.x&&h.x[v];if(t&&!s.t.includes(t)&&s.t.length<3)s.t.push(t)})});
+ const lines=poolOf("all").filter(x=>st[x.v].w>0).sort((a,b)=>st[b.v].w-st[a.v].w).slice(0,30)
+  .map(x=>{const s=st[x.v];return `${D(x)}（${x.m}） 正解=${x.p} 出題${s.a}回中ミス${s.w}回 誤答例: ${s.t.join(", ")||"記録なし"}`}).join("\n");
+ const trend=hist.slice(0,30).reverse().map(h=>Math.round(h.s/h.n*100)).join(", ");
+ const prompt=`あなたは中学生向けの英語の先生です。以下は、${MN[mode]}の過去の成績です。
+【点数の推移（古い順、100点満点）】${trend}
+【よくまちがえる動詞（ミスが多い順）】
+${lines||"ミスなし"}
+
+${mode==="v"?"":"※日本語の意味から英語のスペルを書く単語問題も含まれます。スペルミスの傾向や覚え方も分析してください。\n"}これをもとに、日本語で次の内容を答えてください。
+1. まちがいの傾向をタイプ別に（例: 不規則変化の暗記不足、子音を重ねるルール、y→ied、原形と同じ形、スペルミス、紛らわしい類似語との混同など）。誤答例があればそれを根拠にして、「知らない」のか「スペルミス」のかを判断する。
+2. 苦手な動詞グループと、覚えやすいコツや語合わせ（似た変化の動詞をまとめる）。
+3. 点数の推移からわかること。
+4. 11/11・12のプレVテストと 11/19のVテストに向けた、今日からできる具体的な練習プランを短く。
+読みやすく、全体で約400字以内。Markdown記号（# や **）は使わず、見出しは「■」、箇条書きは「・」を使うこと。`;
+ box.textContent="分析中…";$("hai").disabled=true;
+ try{const r=await sampleFn(prompt,{cache:false,onText:({text})=>{box.textContent=text}});box.textContent=r.text}
+ catch(e){box.textContent=e&&e.code==="not_granted"?"AI分析は許可されていません。":"うまく分析できませんでした。少し待ってからもう一度試してね。"}
+ $("hai").disabled=false;
+};
+$("hweak").onclick=()=>{const l=missed().slice(0,30).map(([v])=>BYID[v]).filter(Boolean);if(!l.length)return;
+ [...$("tabs").children].forEach((c,j)=>c.classList.toggle("on",j===0));$("hist").classList.add("hide");begin(l,true);};
+
+/* モード切替 */
+const MN={v:"英語動詞の「原形→過去形」クイズ",w:"基本英単語（日本語→英語のスペル）クイズ",m:"動詞の過去形と基本英単語の合併クイズ"};
+const NM={v:"動詞の過去形",w:"基本英単語",m:"合併（動詞＋単語）"};
+const SUB={v:"鬼の動詞変形トレーニング ／ 原形 → 過去形",w:"基本英単語 Lesson 7・8 ／ 日本語 → 英語",m:"合併：動詞の過去形 ＋ 基本英単語"};
+const RG={v:[["all","全部"],["a","前半 (arrive〜laugh)"],["b","後半 (stand〜spend)"]],w:[["all","全部"],["one","1単語だけ"],["ph","熟語・英文だけ"],["l7","Lesson 7"],["l8","Lesson 8"]],m:[["all","全部"]]};
+function chips(id){$(id).innerHTML=RG[mode].map(([v,t],j)=>`<button class="chip${j?"":" on"}" data-v="${v}">${t}</button>`).join("")}
+function setMode(m){mode=m;opt.rng="all";fcRng="all";chips("rng");chips("fr");loadHist();
+ [...$("modes").children].forEach(c=>c.classList.toggle("on",c.dataset.v===m));
+ $("sub").textContent=SUB[m];$("hmode").textContent="統計："+NM[m];$("aiout").classList.add("hide");
+ ["play","result"].forEach(id=>$(id).classList.add("hide"));
+ [...$("tabs").children].find(c=>c.classList.contains("on")).click();}
+$("modes").addEventListener("click",e=>{const b=e.target.closest(".chip");if(b&&b.dataset.v!==mode)setMode(b.dataset.v)});
+</script>
+</body>
+</html>
